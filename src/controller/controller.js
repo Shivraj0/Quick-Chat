@@ -17,3 +17,15 @@ exports.addUser = (userID, username, roomname) => {
 
     return user;
 };
+
+exports.getUser = (userID) => {
+    var user = {};
+
+    userDB.findOne({id: userID}, (err, userObj) => {
+        err ? console.log('Cannot find the user with the given userID...') : user = userObj;
+        console.log(user);
+        return;
+    });
+
+    return user;
+};
