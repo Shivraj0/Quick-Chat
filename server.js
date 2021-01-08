@@ -46,17 +46,19 @@ io.on('connection', socket => {
         socket.emit('messageChannel', utility.FormatMessage(constants.QuickBot, 'Quick-Chat team welcomes you.!'));
 
         // broadcast new user join message in a room.
-        let broadcastMessage = `${user.username} joined ${user.room} room.`;
-        socket.broadcast.emit('messageChannel', utility.FormatMessage('test', broadcastMessage));
+        let broadcastMessage = `${user.username} joined the room.`;
+        socket.broadcast.to(user.room).emit('messageChannel', utility.FormatMessage(user.username, broadcastMessage));
     });
 
     socket.on('disconnect', () => {
-        io.emit('messageChannel', 'A user poped out of chat.')
+        io.emit('messageChannel', utility.FormatMessage(constants.QuickBot, 'A user left the room.'))
     });
 
     // Socket to receive and send message back to client.
     socket.on('userMsgChannel', (userMessage) => {        
-        io.emit('messageChannel', FormatMessage('User', userMessage));
+        // Get user details.
+        const user = controller.getUser(socket.id);
+        io.to(user.room).emit('messageChannel', utility.FormatMessage('User', userMessage));
     });
 });
 
