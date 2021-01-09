@@ -1,5 +1,6 @@
 const userDB = require('../model/schema');
 
+// Add user
 exports.addUser = (userID, username, roomname) => {
     
     const user = {
@@ -8,24 +9,61 @@ exports.addUser = (userID, username, roomname) => {
         room: roomname
     };
 
-    const newUser = userDB(user);
+    const newuser = userDB(user);
+    
+    newuser.save((err, userObj) => {
 
-    newUser.save((err, doc) => {
-        err ? console.log('Error adding user to the database...\n', err) : console.log('User added to the Database.!')
-        return;
+        if(err) {
+            console.log('Error adding user to the database...\n', err);            
+        }
+
+        if(userObj) {
+            console.log(`${userObj.username} added to Database.!`);
+        }
+
     });
 
     return user;
 };
 
+// Get user with given socket id.
 exports.getUser = (userID) => {
-    var user = {};
 
-    userDB.findOne({id: userID}, (err, userObj) => {
-        err ? console.log('Cannot find the user with the given userID...') : user = userObj;
-        console.log(user);
-        return;
-    });
+    let user = userDB.findOne({id: userID})
+        .then((userObj) => {
+            return userObj;
+        })
+        .catch((err) => {
+            console.log('Controller: Some error occurred while fetching... \n', err);
+        });
+
+    return user;
+};
+
+// Find all users.
+exports.findUsers = () => { 
+    
+    let user = userDB.find()
+        .then((userObj) => {
+            return userObj;
+        })
+        .catch((err) => {
+            console.log('Controller: Some error while fetching users... \n', err);
+        });
+
+    return user;
+};
+
+// Remove user with given socket id.
+exports.removeUser = (userID) => {
+
+    let user = userDB.findOneAndRemove({id: userID}, {useFindAndModify: false})
+        .then(() => {
+            console.log('Controller: User successfully removed.!');
+        })
+        .catch((err) => {
+            console.log('Controller: Some error occurred while removing user... \n', err);
+        });
 
     return user;
 };
