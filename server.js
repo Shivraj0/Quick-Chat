@@ -84,15 +84,14 @@ io.on('connection', socket => {
         
         controller.getUser(socket.id)
             .then((user) => {
-                console.log(user);
-                io.to(user.room).emit('messageChannel', utility.FormatMessage(constants.QuickBot, `${user.username} left the room.`));
+                user && io.to(user.room).emit('messageChannel', utility.FormatMessage(constants.QuickBot, `${user.username} left the room.`));
 
                 // Remove user and send room info to client.
                 controller.removeUser(socket.id)
                     .then(() => {
                         controller.findUsers()
                             .then((users) => {
-                                io.to(user.room).emit('userRoom', {
+                                user && io.to(user.room).emit('userRoom', {
                                     room: user.room,
                                     users: users
                                 });
