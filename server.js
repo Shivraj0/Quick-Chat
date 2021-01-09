@@ -22,6 +22,7 @@ const server = http.createServer(app); // http server variable.
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Database 
+mongoose.Promise = global.Promise;
 mongoose.connect(config.dbURL, {   
         useNewUrlParser: true,
         useUnifiedTopology: true
@@ -38,9 +39,13 @@ const io = socketio(server);
 // Socket communcation channel.
 io.on('connection', socket => {
     
+    // Join room
     socket.on('joinRoom', ({username, room}) => {
-        const user = controller.addUser(socket.id, username, room);
-        socket.join(user.room);
+        
+        socket.join(room);
+
+        // Add user to DB.
+        let user = controller.addUser(socket.id, username, room);
 
         // Connection success message to client.
         socket.emit('messageChannel', utility.FormatMessage(constants.QuickBot, 'Quick-Chat team welcomes you.!'));
@@ -48,18 +53,63 @@ io.on('connection', socket => {
         // broadcast new user join message in a room.
         let broadcastMessage = `${user.username} joined the room.`;
         socket.broadcast.to(user.room).emit('messageChannel', utility.FormatMessage(user.username, broadcastMessage));
-    });
 
-    socket.on('disconnect', () => {
-        io.emit('messageChannel', utility.FormatMessage(constants.QuickBot, 'A user left the room.'))
+        controller.findUsers()
+            .then((users) => {
+                io.to(user.room).emit('userRoom', {
+                    room: user.room,
+                    users: users
+                });
+            })
+            .catch((err) => {
+
+            });
+    
     });
 
     // Socket to receive and send message back to client.
-    socket.on('userMsgChannel', (userMessage) => {        
-        // Get user details.
-        const user = controller.getUser(socket.id);
-        io.to(user.room).emit('messageChannel', utility.FormatMessage('User', userMessage));
+    socket.on('userMsgChannel', (userMessage) => {
+
+        controller.getUser(socket.id)
+            .then((user) => {
+                io.to(user.room).emit('messageChannel', utility.FormatMessage(user.username, userMessage));
+            })
+            .catch((err) => {
+                console.log('Some error occurred while sending messages... \n', err)
+            });
     });
+
+    // Leave room.
+    socket.on('disconnect', () => {
+        
+        controller.getUser(socket.id)
+            .then((user) => {
+                console.log(user);
+                io.to(user.room).emit('messageChannel', utility.FormatMessage(constants.QuickBot, `${user.username} left the room.`));
+
+                // Remove user and send room info to client.
+                controller.removeUser(socket.id)
+                    .then(() => {
+                        controller.findUsers()
+                            .then((users) => {
+                                io.to(user.room).emit('userRoom', {
+                                    room: user.room,
+                                    users: users
+                                });
+                            })
+                            .catch((err) => {
+                                console.log('Sever: Some error occurred while fetching users... \n',err);
+                            });
+                    })
+                    .catch((err) => {
+                        console.log('Server: Some error occurred while fetching users... \n', err);
+                    });
+            })
+            .catch((err) => {
+                console.log('Server: Some error occurred while leaving room... \n', err)
+            });
+    });
+
 });
 
 const port = config.PORT;
