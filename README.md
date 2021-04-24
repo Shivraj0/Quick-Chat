@@ -14,4 +14,4 @@ npm install
 npm run dev
 ```
 
-Now hit [this](localhost:3000) url to see your application running.
+Now hit `localhost:3000` url to see your application running.
