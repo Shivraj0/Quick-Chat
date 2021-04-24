@@ -9,7 +9,7 @@ Using `npm` package manager to install dependencies.
 npm install
 ```
 
-## Usage
+### Usage
 ```bash
 npm run dev
 ```
